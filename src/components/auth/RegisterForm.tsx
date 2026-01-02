@@ -21,6 +21,7 @@ type RegisterValues = z.infer<typeof registerSchema>;
 
 export function RegisterForm() {
     const [isLoading, setIsLoading] = useState(false);
+    const [error, setError] = useState<string | null>(null);
 
     const {
         register,
@@ -32,11 +33,34 @@ export function RegisterForm() {
 
     async function onSubmit(data: RegisterValues) {
         setIsLoading(true);
-        // Simulate API call
-        console.log("Register data:", data);
-        await new Promise((resolve) => setTimeout(resolve, 1500));
-        setIsLoading(false);
-        alert("Đăng ký thành công! Vui lòng kiểm tra email của bạn.");
+        setError(null);
+        try {
+            const response = await fetch("http://localhost:5000/api/auth/register", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                },
+                body: JSON.stringify({
+                    username: data.name,
+                    email: data.email,
+                    password: data.password,
+                }),
+            });
+
+            const result = await response.json();
+
+            if (!response.ok) {
+                throw new Error(result.message || "Đăng ký thất bại");
+            }
+
+            alert("Đăng ký thành công! Vui lòng đăng nhập.");
+            // Optional: Redirect to login page here using useRouter
+        } catch (error: any) {
+            console.error("Registration error:", error);
+            setError(error.message || "Đã có lỗi xảy ra");
+        } finally {
+            setIsLoading(false);
+        }
     }
 
     return (
@@ -49,6 +73,11 @@ export function RegisterForm() {
             </CardHeader>
             <CardContent className="grid gap-4">
                 <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+                    {error && (
+                        <div className="p-3 text-sm text-red-500 bg-red-500/10 border border-red-500/20 rounded-md">
+                            {error}
+                        </div>
+                    )}
                     <div className="grid gap-2">
                         <Label htmlFor="name">Họ và tên</Label>
                         <Input id="name" placeholder="Nguyễn Văn A" {...register("name")} />
